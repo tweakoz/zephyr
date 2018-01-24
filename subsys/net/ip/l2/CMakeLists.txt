@@ -28,3 +28,7 @@ endif()
 if(CONFIG_NET_L2_OPENTHREAD)
   add_subdirectory(openthread)
 endif()
+
+if(CONFIG_NET_GPTP)
+  add_subdirectory(gptp)
+endif()
