@@ -59,3 +59,13 @@
 		_bt_settings_end = .;
 	} GROUP_LINK_IN(ROMABLE_REGION)
 #endif
+
+#if defined(CONFIG_PTP_CLOCK)
+	SECTION_PROLOGUE(ptp_clock, (OPTIONAL), )
+	{
+		__ptp_clock_start = .;
+		*(".ptp_clock.*")
+		KEEP(*(SORT_BY_NAME(".ptp_clock.*")))
+		__ptp_clock_end = .;
+	} GROUP_LINK_IN(ROMABLE_REGION)
+#endif
