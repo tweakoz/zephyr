@@ -1,0 +1,13 @@
+common:
+  harness: net
+  tags: net gptp
+sample:
+  description: Test gPTP functionality
+  name: gPTP sample app
+tests:
+  test:
+    platform_whitelist: qemu_x86 frdm_k64f
+    depends_on: netif
+    # To avoid "Too many thread objects" error
+    extra_configs:
+      - CONFIG_USERSPACE=n
