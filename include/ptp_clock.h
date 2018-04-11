@@ -59,12 +59,12 @@ struct ptp_clock {
 #define PTP_CLOCK_GET(dev_name, sfx)					\
 	((struct ptp_clock *)&PTP_CLOCK_GET_NAME(dev_name, sfx))
 
-#define PTP_CLOCK_INIT(dev_name, sfx, api)				\
+#define PTP_CLOCK_INIT(dev_name, sfx, ptp_api)				\
 	static const struct ptp_clock					\
 			(PTP_CLOCK_GET_NAME(dev_name, sfx)) __used	\
 	__attribute__((__section__(".ptp_clock.data"))) = {		\
 		.dev = &(DEVICE_NAME_GET(dev_name)),			\
-		.api = &(api),						\
+		.api = &(ptp_api),						\
 	}								\
 
 /* PTP clock initialization macros */
