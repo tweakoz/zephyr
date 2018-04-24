@@ -435,6 +435,9 @@ struct gptp_port_ds {
 	/** Whether neighborPropDelay needs to be computed for this port. */
 	bool compute_neighbor_prop_delay : 1;
 
+	/** Whether neighbor rate ratio can be used to update clocks. */
+	bool neighbor_rate_ratio_valid : 1;
+
 	/** Initial Announce Interval as a Logarithm to base 2. */
 	s8_t ini_log_announce_itv;
 
