@@ -12,6 +12,7 @@
 
 #include <zephyr.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <shell/shell.h>
 
 #include <net/net_if.h>
@@ -1803,6 +1804,10 @@ static const char *cms_rcv2str(enum gptp_cms_rcv_states state)
 	return "<unknown>";
 };
 
+#if !defined(USCALED_NS_TO_NS)
+#define USCALED_NS_TO_NS(val) (val >> 16)
+#endif
+
 static void gptp_print_port_info(int port)
 {
 	struct gptp_port_bmca_data *port_bmca_data;
@@ -1845,10 +1850,10 @@ static void gptp_print_port_info(int port)
 	       ": %s\n", port_ds->ptt_port_enabled ? "yes" : "no");
 	printk("The port is measuring the path delay                          "
 	       ": %s\n", port_ds->is_measuring_delay ? "yes" : "no");
-	printk("One way propagation time on %s    : %u\n",
+	printf("One way propagation time on %s    : %f\n",
 	       "the link attached to this port",
-	       (u32_t)port_ds->neighbor_prop_delay);
-	printk("Propagation time threshold for %s : %u\n",
+	       port_ds->neighbor_prop_delay);
+	printf("Propagation time threshold for %s : %u ns\n",
 	       "the link attached to this port",
 	       (u32_t)port_ds->neighbor_prop_delay_thresh);
 	printk("Estimate of the ratio of the frequency with the peer          "
@@ -1891,14 +1896,14 @@ static void gptp_print_port_info(int port)
 	printk("Time without receiving sync %s %s      : %d\n",
 	       "messages", "before running BMCA",
 	       port_ds->sync_receipt_timeout);
-	printk("Sync event %s                 : %u.%llu\n",
+	printk("Sync event %s                 : %llu ms\n",
 	       "transmission interval for the port",
-	       port_ds->half_sync_itv.high,
-	       port_ds->half_sync_itv.low);
-	printk("Path Delay Request %s         : %u.%llu\n",
+	       USCALED_NS_TO_NS(port_ds->half_sync_itv.low) /
+	       (NSEC_PER_USEC * USEC_PER_MSEC));
+	printk("Path Delay Request %s         : %llu ms\n",
 	       "transmission interval for the port",
-	       port_ds->pdelay_req_itv.high,
-	       port_ds->pdelay_req_itv.low);
+	       USCALED_NS_TO_NS(port_ds->pdelay_req_itv.low) /
+	       (NSEC_PER_USEC * USEC_PER_MSEC));
 
 	printk("\nRuntime status:\n");
 	printk("Path Delay Request state machine variables:\n");
@@ -1959,7 +1964,7 @@ static void gptp_print_port_info(int port)
 	printk("PortSyncSync Receive state machine variables:\n");
 	printk("\tCurrent state                                    "
 	       ": %s\n", pss_rcv2str(port_state->pss_rcv.state));
-	printk("\tGrand Master / Local Clock frequency ratio       "
+	printf("\tGrand Master / Local Clock frequency ratio       "
 	       ": %f\n", port_state->pss_rcv.rate_ratio);
 	printk("\tA MDSyncReceive struct is ready to be processed  "
 	       ": %s\n", port_state->pss_rcv.rcvd_md_sync ? "yes" : "no");
@@ -1978,10 +1983,10 @@ static void gptp_print_port_info(int port)
 	printk("\tSync Receipt Timeout Time of last recv PSS       "
 	       ": %llu\n",
 	       port_state->pss_send.last_sync_receipt_timeout_time);
-	printk("\tRate Ratio of the last received PortSyncSync     "
+	printf("\tRate Ratio of the last received PortSyncSync     "
 	       ": %f\n",
 	       port_state->pss_send.last_rate_ratio);
-	printk("\tGM Freq Change of the last received PortSyncSync "
+	printf("\tGM Freq Change of the last received PortSyncSync "
 	       ": %f\n", port_state->pss_send.last_gm_freq_change);
 	printk("\tGM Time Base Indicator of last recv PortSyncSync "
 	       ": %d\n", port_state->pss_send.last_gm_time_base_indicator);
@@ -2075,7 +2080,31 @@ int net_shell_cmd_gptp(int argc, char *argv[])
 		arg++;
 	}
 
-	if (argv[arg]) {
+	if (!strcmp(argv[arg], "monitor")) {
+#if defined(CONFIG_NET_GPTP_STATISTICS)
+		arg++;
+
+		if (argv[arg]) {
+			/* Print monitor information every n seconds */
+			int seconds = strtol(argv[arg], NULL, 10);
+
+			gptp_monitor(seconds);
+
+			printk("Priting gPTP performance statistics every %d "
+			       "seconds.\n", seconds);
+		} else {
+			/* Turn monitoring off */
+			gptp_monitor(0);
+
+			printk("Disable gPTP statistics printing.\n");
+		}
+
+#else /* CONFIG_NET_GPTP_STATISTICS */
+		printk("Enable CONFIG_NET_GPTP_STATISTICS to activate "
+		       "monitoring.\n");
+#endif /* CONFIG_NET_GPTP_STATISTICS */
+
+	} else if (argv[arg]) {
 		int port = strtol(argv[arg], NULL, 10);
 
 		gptp_print_port_info(port);

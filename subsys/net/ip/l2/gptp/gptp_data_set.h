@@ -467,11 +467,34 @@ struct gptp_port_ds {
 };
 
 /**
+ * @brief Port performance statistics
+ *
+ * Data Set containing performance statistics.
+ */
+struct gptp_stats {
+	u32_t num_values;
+	double min;
+	double max;
+	double mean;
+	double sum_sqr;
+	double sum_diff_sqr;
+};
+
+/**
  * @brief Port Parameter Statistics.
  *
  * Data Set containing statistics associated with various events.
  */
 struct gptp_port_param_ds {
+	/** Clock offset statistics */
+	struct gptp_stats stats_offset;
+
+	/** Clock frequency statistics */
+	struct gptp_stats stats_freq;
+
+	/** Sync delay statistics */
+	struct gptp_stats stats_delay;
+
 	/** Number of Sync messages received. */
 	u32_t rx_sync_count;
 
@@ -587,6 +610,20 @@ int gptp_get_port_data(struct gptp_domain *domain, int port,
 		       struct gptp_port_states **port_state,
 		       struct gptp_port_bmca_data **port_bmca_data,
 		       struct net_if **iface);
+
+#if defined(CONFIG_NET_GPTP_STATISTICS)
+/**
+ * @brief Enable or disable gPTP performance monitoring.
+ *
+ * @param seconds How often to print monitoring information.
+ */
+void gptp_monitor(int seconds);
+#else /* CONFIG_NET_GPTP_STATISTICS */
+static inline gptp_monitor(int seconds)
+{
+	ARG_UNUSED(seconds);
+}
+#endif /* CONFIG_NET_GPTP_STATISTICS */
 
 #endif /* CONFIG_NET_GPTP */
 

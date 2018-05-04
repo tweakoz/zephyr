@@ -9,6 +9,8 @@
 #define NET_LOG_ENABLED 1
 #endif
 
+#include <stdlib.h>
+
 #include "gptp_messages.h"
 #include "gptp_md.h"
 #include "gptp_data_set.h"
@@ -266,6 +268,43 @@ static void gptp_md_compute_pdelay_rate_ratio(int port)
 	port_ds->neighbor_rate_ratio_valid = state->neighbor_rate_ratio_valid;
 }
 
+#if defined(CONFIG_NET_GPTP_STATISTICS)
+static void add_value(struct gptp_stats *stats, double value)
+{
+	double old_mean = stats->mean;
+
+	if (!stats->num_values || stats->max < value) {
+		stats->max = value;
+	}
+
+	if (!stats->num_values || stats->min > value) {
+		stats->min = value;
+	}
+
+	stats->num_values++;
+
+	stats->mean = old_mean + (value - old_mean) / stats->num_values;
+	stats->sum_sqr += value * value;
+	stats->sum_diff_sqr += (value - old_mean) * (value - stats->mean);
+}
+
+static void gptp_stats_calc(int port)
+{
+	struct gptp_port_param_ds *port_param_ds = GPTP_PORT_PARAM_DS(port);
+	struct gptp_port_ds *port_ds = GPTP_PORT_DS(port);
+
+	if (port_ds->neighbor_rate_ratio_valid) {
+		add_value(&port_param_ds->stats_freq,
+			  port_ds->neighbor_rate_ratio);
+	}
+
+	add_value(&port_param_ds->stats_delay, port_ds->neighbor_prop_delay);
+}
+
+#else /* CONFIG_NET_GPTP_STATISTICS */
+#define gptp_stats_calc(...)
+#endif /* CONFIG_NET_GPTP_STATISTICS */
+
 static void gptp_md_compute_prop_time(int port)
 {
 	struct gptp_pdelay_req_state *state;
@@ -318,11 +357,18 @@ static void gptp_md_compute_prop_time(int port)
 	}
 
 	prop_time = (t4_ns - t1_ns);
-	prop_time *= port_ds->neighbor_rate_ratio;
+
+	if (port_ds->neighbor_rate_ratio_valid &&
+	    port_ds->neighbor_rate_ratio > 0) {
+		prop_time *= port_ds->neighbor_rate_ratio;
+	}
+
 	prop_time -= (t3_ns - t2_ns);
 	prop_time /= 2;
 
-	port_ds->neighbor_prop_delay = prop_time;
+	port_ds->neighbor_prop_delay = abs(prop_time);
+
+	gptp_stats_calc(port);
 }
 
 static void gptp_md_pdelay_compute(int port)
