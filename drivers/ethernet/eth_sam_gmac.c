@@ -541,6 +541,22 @@ static void link_configure(Gmac *gmac, u32_t flags)
 	gmac->GMAC_NCR |= (GMAC_NCR_RXEN | GMAC_NCR_TXEN);
 }
 
+static void eth_tx_timeout_work(struct k_work *item)
+{
+	struct gmac_queue *queue =
+		CONTAINER_OF(item, struct gmac_queue, tx_timeout_work);
+	struct eth_sam_dev_data *dev_data =
+		CONTAINER_OF(queue, struct eth_sam_dev_data,
+			     queue_list[queue->que_idx]);
+
+	struct device *const dev = net_if_get_device(dev_data->iface);
+	const struct eth_sam_dev_cfg *const cfg = DEV_CFG(dev);
+	Gmac *gmac = cfg->regs;
+
+	/* Just treat it as an error and discard all packets in the queue */
+	tx_error_handler(gmac, queue);
+}
+
 static int nonpriority_queue_init(Gmac *gmac, struct gmac_queue *queue)
 {
 	int result;
@@ -566,6 +582,9 @@ static int nonpriority_queue_init(Gmac *gmac, struct gmac_queue *queue)
 	 */
 	k_sem_init(&queue->tx_desc_sem, queue->tx_desc_list.len - 1,
 		   queue->tx_desc_list.len - 1);
+
+	k_delayed_work_init(&queue->tx_timeout_work,
+			    eth_tx_timeout_work);
 
 	/* Set Receive Buffer Queue Pointer Register */
 	gmac->GMAC_RBQB = (u32_t)queue->rx_desc_list.buf;
@@ -622,6 +641,9 @@ static int priority_queue_init(Gmac *gmac, struct gmac_queue *queue)
 
 	k_sem_init(&queue->tx_desc_sem, queue->tx_desc_list.len - 1,
 		   queue->tx_desc_list.len - 1);
+
+	k_delayed_work_init(&queue->tx_timeout_work,
+			    eth_tx_timeout_work);
 
 	/* Setup RX buffer size for DMA */
 	gmac->GMAC_RBSRPQ[queue_index] =
@@ -989,6 +1011,12 @@ static int eth_tx(struct net_if *iface, struct net_pkt *pkt)
 	/* Start transmission */
 	gmac->GMAC_NCR |= GMAC_NCR_TSTART;
 
+	/* Set timeout for queue */
+	if (k_delayed_work_remaining_get(&queue->tx_timeout_work) == 0) {
+		k_delayed_work_submit(&queue->tx_timeout_work,
+				      CONFIG_ETH_SAM_GMAC_TX_TIMEOUT_MSEC);
+	}
+
 	return 0;
 }
 
@@ -1028,7 +1056,11 @@ static void queue0_isr(void *arg)
 		SYS_LOG_DBG("tx.w1=0x%08x, tail=%d",
 			    tx_desc_list.buf[tx_desc_list.tail].w1,
 			    tx_desc_list.tail);
-		tx_completed(gmac, queue);
+
+		/* Check if it is not too late */
+		if (k_delayed_work_cancel(&queue->tx_timeout_work) == 0) {
+			tx_completed(gmac, queue);
+		}
 	}
 
 	if (isr & GMAC_IER_HRESP) {
@@ -1072,7 +1104,11 @@ static inline void priority_queue_isr(void *arg, unsigned int queue_idx)
 		SYS_LOG_DBG("tx.w1=0x%08x, tail=%d",
 			    tx_desc_list.buf[tx_desc_list.tail].w1,
 			    tx_desc_list.tail);
-		tx_completed(gmac, queue);
+
+		/* Check if it is not too late */
+		if (k_delayed_work_cancel(&queue->tx_timeout_work) == 0) {
+			tx_completed(gmac, queue);
+		}
 	}
 
 	if (isrpq & GMAC_IERPQ_HRESP) {
