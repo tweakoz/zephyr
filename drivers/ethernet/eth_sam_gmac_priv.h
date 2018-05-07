@@ -19,12 +19,30 @@
 #define GMAC_DESC_ALIGNMENT               4
 /** Total number of queues supported by GMAC hardware module */
 #define GMAC_QUEUE_NO                     3
+/** Number of priority queues used */
+#define GMAC_PRIORITY_QUEUE_NO            (CONFIG_ETH_SAM_GMAC_QUEUES - 1)
+
 /** RX descriptors count for main queue */
 #define MAIN_QUEUE_RX_DESC_COUNT CONFIG_ETH_SAM_GMAC_BUF_RX_COUNT
 /** TX descriptors count for main queue */
 #define MAIN_QUEUE_TX_DESC_COUNT (CONFIG_NET_BUF_TX_COUNT + 1)
+
 /** RX/TX descriptors count for priority queues */
-#define PRIORITY_QUEUE_DESC_COUNT         1
+#if GMAC_PRIORITY_QUEUE_NO == 2
+#define PRIORITY_QUEUE2_RX_DESC_COUNT         MAIN_QUEUE_RX_DESC_COUNT
+#define PRIORITY_QUEUE2_TX_DESC_COUNT         MAIN_QUEUE_TX_DESC_COUNT
+#else
+#define PRIORITY_QUEUE2_RX_DESC_COUNT         1
+#define PRIORITY_QUEUE2_TX_DESC_COUNT         1
+#endif
+
+#if GMAC_PRIORITY_QUEUE_NO >= 1
+#define PRIORITY_QUEUE1_RX_DESC_COUNT         MAIN_QUEUE_RX_DESC_COUNT
+#define PRIORITY_QUEUE1_TX_DESC_COUNT         MAIN_QUEUE_TX_DESC_COUNT
+#else
+#define PRIORITY_QUEUE1_RX_DESC_COUNT         1
+#define PRIORITY_QUEUE1_TX_DESC_COUNT         1
+#endif
 
 /* FIXME change to
  * #if __DCACHE_PRESENT == 1
@@ -116,6 +134,14 @@
 #define GMAC_INT_EN_FLAGS \
 		(GMAC_IER_RCOMP | GMAC_INT_RX_ERR_BITS | \
 		 GMAC_IER_TCOMP | GMAC_INT_TX_ERR_BITS | GMAC_IER_HRESP)
+
+#define GMAC_INTPQ_RX_ERR_BITS \
+		(GMAC_IERPQ_RXUBR | GMAC_IERPQ_ROVR)
+#define GMAC_INTPQ_TX_ERR_BITS \
+		(GMAC_IERPQ_RLEX | GMAC_IERPQ_TFC)
+#define GMAC_INTPQ_EN_FLAGS \
+		(GMAC_IERPQ_RCOMP | GMAC_INTPQ_RX_ERR_BITS | \
+		 GMAC_IERPQ_TCOMP | GMAC_INTPQ_TX_ERR_BITS | GMAC_IERPQ_HRESP)
 
 /** List of GMAC queues */
 enum queue_idx {
