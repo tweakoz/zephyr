@@ -72,6 +72,9 @@ enum ethernet_hw_caps {
 
 	/** Changing duplex (half/full) supported */
 	ETHERNET_DUPLEX_SET		= BIT(7),
+
+	/** IEEE 802.1 Qav supported */
+	ETHERNET_QAV			= BIT(8),
 };
 
 enum ethernet_config_type {
@@ -79,6 +82,16 @@ enum ethernet_config_type {
 	ETHERNET_CONFIG_TYPE_LINK,
 	ETHERNET_CONFIG_TYPE_DUPLEX,
 	ETHERNET_CONFIG_TYPE_MAC_ADDRESS,
+	ETHERNET_CONFIG_TYPE_QAV_DELTA_BANDWIDTH,
+	ETHERNET_CONFIG_TYPE_QAV_IDLE_SLOPE,
+};
+
+struct ethernet_qav_queue_param {
+	int queue_id;
+	union {
+		unsigned int delta_bandwidth;
+		unsigned int idle_slope;
+	};
 };
 
 struct ethernet_config {
@@ -94,6 +107,8 @@ struct ethernet_config {
 		} l;
 
 		struct net_eth_addr mac_address;
+
+		struct ethernet_qav_queue_param qav_queue_param;
 	};
 /* @endcond */
 };
