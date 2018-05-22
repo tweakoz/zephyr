@@ -11,3 +11,9 @@ zephyr_library_sources(
   gptp_messages.c
   gptp_mi.c
   )
+
+set_source_files_properties( gptp.c           PROPERTIES COMPILE_FLAGS -finstrument-functions)
+set_source_files_properties( gptp_iface.c     PROPERTIES COMPILE_FLAGS -finstrument-functions)
+set_source_files_properties( gptp_md.c        PROPERTIES COMPILE_FLAGS -finstrument-functions)
+set_source_files_properties( gptp_messages.c  PROPERTIES COMPILE_FLAGS -finstrument-functions)
+set_source_files_properties( gptp_mi.c        PROPERTIES COMPILE_FLAGS -finstrument-functions)

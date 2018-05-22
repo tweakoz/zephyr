@@ -19,6 +19,76 @@
 #include <net/ethernet.h>
 #include <net/gptp.h>
 
+struct func_stat {
+	u32_t ptr;
+	s64_t times_executed;
+	s64_t last_start;
+	s64_t total_time;
+};
+
+#define NUMBER_OF_PROFILED_CB 200
+struct func_stat func_stats[NUMBER_OF_PROFILED_CB];
+unsigned int funcs_n = 0;
+
+inline int add_func(void *func)
+{
+	if (funcs_n >= NUMBER_OF_PROFILED_CB)
+		return -1;
+	func_stats[funcs_n].ptr = func;
+	func_stats[funcs_n].times_executed = 0;
+	func_stats[funcs_n].last_start = 0;
+	func_stats[funcs_n].total_time = 0;
+	return funcs_n++;
+}
+
+inline int get_func_num(void *func)
+{
+	int i;
+	for (i = 0; i < funcs_n; ++i) {
+		if (func_stats[i].ptr == (u32_t)func)
+			return i;
+	}
+	return -1;
+}
+
+void print_func_stats()
+{
+	int i;
+	for (i = 0; i < funcs_n; ++i) {
+		printk("%08x%10lld%10lld\n",
+		       func_stats[i].ptr - 1,
+		       func_stats[i].total_time,
+		       func_stats[i].times_executed);
+	}
+}
+
+void __cyg_profile_func_enter (void *func,  void *caller)
+{
+	int n = 0;
+	struct func_stat *f;
+	n = get_func_num(func);
+
+	if (n < 0) {
+		if (funcs_n >= NUMBER_OF_PROFILED_CB)
+			return;
+		n = add_func(func);
+	}
+	f = &func_stats[n];
+	f->times_executed++;
+	f->last_start = k_uptime_get();
+}
+
+void __cyg_profile_func_exit (void *func, void *caller)
+{
+	int n = -1;
+	struct func_stat *f;
+	n = get_func_num(func);
+	if (n < 0)
+		return;
+	f = &func_stats[n];
+	f->total_time += (k_uptime_get() - f->last_start);
+}
+
 static struct gptp_phase_dis_cb phase_dis;
 
 /* Enable following if you want to run gPTP over VLAN with this application */
@@ -173,4 +243,9 @@ static int init_app(void)
 void main(void)
 {
 	init_app();
+	while (1) {
+		k_sleep(K_SECONDS(10));
+		print_func_stats();
+		printk("---\n");
+	}
 }
