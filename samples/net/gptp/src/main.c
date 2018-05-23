@@ -21,23 +21,35 @@
 
 struct func_stat {
 	u32_t ptr;
-	s64_t times_executed;
+	s32_t times_executed;
+	s32_t total_time;
+
 	s64_t last_start;
-	s64_t total_time;
+
+	s32_t total_time_average_diff;
+	s32_t total_times_average_diff;
 };
 
 #define NUMBER_OF_PROFILED_CB 200
 struct func_stat func_stats[NUMBER_OF_PROFILED_CB];
+struct func_stat func_stats_prev[NUMBER_OF_PROFILED_CB];
 unsigned int funcs_n = 0;
 
 inline int add_func(void *func)
 {
 	if (funcs_n >= NUMBER_OF_PROFILED_CB)
 		return -1;
-	func_stats[funcs_n].ptr = func;
+	func_stats[funcs_n].ptr = (u32_t)func;
 	func_stats[funcs_n].times_executed = 0;
 	func_stats[funcs_n].last_start = 0;
 	func_stats[funcs_n].total_time = 0;
+
+	func_stats[funcs_n].total_time_average_diff = 0;
+	func_stats[funcs_n].total_times_average_diff = 0;
+
+	func_stats_prev[funcs_n].times_executed = 0;
+	func_stats_prev[funcs_n].total_time = 0;
+
 	return funcs_n++;
 }
 
@@ -53,12 +65,60 @@ inline int get_func_num(void *func)
 
 void print_func_stats()
 {
+	/* This function assumes it is printed periodically with a
+	 * constant period */
+	static int times_printed;
 	int i;
+
+	float time_average;
+	float time_average_diff;
+
+	float times_average;
+	float times_average_diff;
+
+	s32_t time_since_last_print;
+	s32_t times_since_last_print;
+
+	times_printed++;
+
 	for (i = 0; i < funcs_n; ++i) {
-		printk("%08x%10lld%10lld\n",
+
+		time_since_last_print = func_stats[i].total_time - func_stats_prev[i].total_time;
+		times_since_last_print = func_stats[i].times_executed - func_stats_prev[i].times_executed;
+
+		time_average = func_stats[i].total_time / times_printed;
+		time_average_diff = time_average - time_since_last_print;
+
+		times_average = func_stats[i].times_executed / times_printed;
+		times_average_diff = times_average - times_since_last_print;
+
+		func_stats_prev[i].total_time = func_stats[i].total_time;
+		func_stats_prev[i].times_executed = func_stats[i].times_executed;
+
+		func_stats[i].total_time_average_diff += time_average_diff;
+		func_stats[i].total_times_average_diff += times_average_diff;
+
+		/* Skip the first batch */
+		if (times_printed == 1)
+			continue;
+
+		/* Skip calls for time is negligible */
+		if (time_average < 5)
+			continue;
+
+		printf("%08x | %10ld%10ld%10ld%10ld | %10ld%10ld%10ld%10ld\n",
 		       func_stats[i].ptr - 1,
+
 		       func_stats[i].total_time,
-		       func_stats[i].times_executed);
+		       (s32_t)time_average,
+		       (s32_t)time_average_diff,
+		       func_stats[i].total_time_average_diff/times_printed,
+
+		       func_stats[i].times_executed,
+		       (s32_t)times_average,
+		       (s32_t)times_average_diff,
+		       func_stats[i].total_times_average_diff/times_printed
+		       );
 	}
 }
 
@@ -86,7 +146,7 @@ void __cyg_profile_func_exit (void *func, void *caller)
 	if (n < 0)
 		return;
 	f = &func_stats[n];
-	f->total_time += (k_uptime_get() - f->last_start);
+	f->total_time += k_uptime_delta(&f->last_start);
 }
 
 static struct gptp_phase_dis_cb phase_dis;
