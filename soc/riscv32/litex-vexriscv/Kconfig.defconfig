@@ -1,0 +1,43 @@
+if SOC_RISCV32_LITEX_VEXRISCV
+
+config SOC
+	string
+	default "litex-vexriscv"
+
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	int
+	default 100000000
+
+config RISCV_SOC_INTERRUPT_INIT
+	bool
+	default n
+
+config RISCV_HAS_CPU_IDLE
+	bool
+	default n
+
+config RISCV_HAS_PLIC
+	bool
+	default n
+
+config NUM_IRQS
+	int
+	default 12
+
+config XIP
+	bool
+	default y
+
+config RISCV_RAM_BASE_ADDR
+	hex
+	default	0x40000000
+
+config RISCV_RAM_SIZE
+	hex
+	default 0x10000000
+
+config SERIAL_SUPPORT_INTERRUPT
+    bool
+    default y
+
+endif # SOC_RISCV32_LITEX_VEXRISCV

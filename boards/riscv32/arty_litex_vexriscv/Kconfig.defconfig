@@ -1,0 +1,6 @@
+if BOARD_ARTY_LITEX_VEXRISCV
+
+config BOARD
+	default "arty_litex_vexriscv"
+
+endif
