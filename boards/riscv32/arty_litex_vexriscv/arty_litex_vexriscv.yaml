@@ -1,0 +1,11 @@
+identifier: arty_litex_vexriscv
+name: LiteX SoC with VexRiscv soft CPU
+type: mcu
+arch: riscv32
+toolchain:
+  - zephyr
+ram: 64
+testing:
+  ignore_tags:
+    - net
+    - bluetooth

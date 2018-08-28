@@ -1,0 +1,4 @@
+config BOARD_ARTY_LITEX_VEXRISCV
+	bool "Digilent Arty dev board with VexRiscv CPU"
+    select HAS_DTS
+	depends on SOC_RISCV32_LITEX_VEXRISCV

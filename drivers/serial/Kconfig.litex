@@ -1,0 +1,25 @@
+# Kconfig.litex - LiteX UART (LiteUART) configuration option
+#
+# Copyright (c) 2018 Antmicro <www.antmicro.com>
+#
+
+menuconfig UART_LITEUART
+	bool "LiteUART serial driver"
+	depends on SOC_RISCV32_LITEX_VEXRISCV
+	select SERIAL_HAS_DRIVER
+	help
+	  This option enables LiteUART serial driver.
+
+menuconfig UART_LITEUART_PORT_0
+	bool "Enable LiteX Port 0"
+	depends on UART_LITEUART
+	help
+	  This tells the driver to configure the UART port at boot, depending on
+	  the additional configuration options below.
+
+config UART_LITEUART_PORT_0_IRQ_PRIORITY
+	int "Port 0 Interrupt Priority"
+	default 1
+	depends on UART_LITEUART_PORT_0
+	help
+	  Port 0 Interrupt Priority

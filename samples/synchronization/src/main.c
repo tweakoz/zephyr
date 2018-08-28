@@ -24,7 +24,7 @@
 #define PRIORITY 7
 
 /* delay between greetings (in ms) */
-#define SLEEPTIME 500
+#define SLEEPTIME 50
 
 
 /*

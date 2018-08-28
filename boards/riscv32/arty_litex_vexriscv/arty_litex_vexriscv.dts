@@ -1,0 +1,21 @@
+/dts-v1/;
+
+#include <riscv32-litex-vexriscv.dtsi>
+
+/ {
+	model = "LiteX VexRiscv";
+	compatible = "litex,vexriscv";
+	chosen {
+		zephyr,console = &uart0;
+        zephyr,timer = &timer0;
+	};
+};
+
+&uart0 {
+	status = "ok";
+	current-speed = <115200>;
+};
+
+&timer0 {
+    status = "ok";
+};
