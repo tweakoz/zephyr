@@ -1,0 +1,5 @@
+if BOARD_LITEX_PICORV32
+
+config BOARD
+	default "litex_picorv32"
+endif

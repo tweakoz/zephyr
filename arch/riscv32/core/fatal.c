@@ -165,7 +165,7 @@ hang_system:
 	CODE_UNREACHABLE;
 }
 
-
+#ifndef CONFIG_BOARD_LITEX_PICORV32
 static char *cause_str(u32_t cause)
 {
 	switch (cause) {
@@ -185,16 +185,17 @@ static char *cause_str(u32_t cause)
 		return "unknown";
 	}
 }
+#endif
 
 
 FUNC_NORETURN void _Fault(const NANO_ESF *esf)
 {
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	u32_t mcause;
-
 	__asm__ volatile("csrr %0, mcause" : "=r" (mcause));
 
 	mcause &= SOC_MCAUSE_EXP_MASK;
 	printk("Exception cause %s (%d)\n", cause_str(mcause), (int)mcause);
-
+    #endif
 	_NanoFatalErrorHandler(_NANO_ERR_CPU_EXCEPTION, esf);
 }

@@ -1,5 +1,5 @@
-identifier: arty_litex_vexriscv
-name: LiteX SoC with VexRiscv soft CPU
+identifier: litex_picorv32
+name: LiteX SoC with PicoRV32 soft CPU
 type: mcu
 arch: riscv32
 toolchain:

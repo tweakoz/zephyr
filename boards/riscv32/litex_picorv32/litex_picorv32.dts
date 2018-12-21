@@ -1,0 +1,19 @@
+/dts-v1/;
+
+#include <riscv32-litex-picorv32.dtsi>
+
+/ {
+	model = "LiteX PicoRV32";
+	compatible = "litex,picorv32";
+};
+
+&uart0 {
+	status = "ok";
+	current-speed = <115200>;
+};
+
+&timer0 {
+    status = "ok";
+};
+
+

@@ -1,0 +1,16 @@
+:name: LiteX + VexRiscv
+:description: This script is prepared to run Zephyr on a LiteX SoC with VexRiscv.
+
+$name?="litex"
+
+using sysbus
+mach create $name
+machine LoadPlatformDescription @platforms/cpus/litex_vexriscv.repl
+
+showAnalyzer uart
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset

@@ -90,14 +90,20 @@ void _irq_spurious(void *unused);
  */
 static ALWAYS_INLINE unsigned int _arch_irq_lock(void)
 {
-	unsigned int key, mstatus;
-
+	unsigned int key;
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
+	unsigned int mstatus;
 	__asm__ volatile ("csrrc %0, mstatus, %1"
 			  : "=r" (mstatus)
 			  : "r" (SOC_MSTATUS_IEN)
 			  : "memory");
 
 	key = (mstatus & SOC_MSTATUS_IEN);
+	
+	#else
+	key = 0;
+	#endif
+
 	return key;
 }
 
@@ -107,12 +113,15 @@ static ALWAYS_INLINE unsigned int _arch_irq_lock(void)
  */
 static ALWAYS_INLINE void _arch_irq_unlock(unsigned int key)
 {
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	unsigned int mstatus;
 
 	__asm__ volatile ("csrrs %0, mstatus, %1"
 			  : "=r" (mstatus)
 			  : "r" (key & SOC_MSTATUS_IEN)
 			  : "memory");
+	#else	
+	#endif
 }
 
 /**

@@ -10,7 +10,11 @@
 #include <irq.h>
 #include <device.h>
 #include <uart.h>
+#include <soc.h>
+#include <../boards/riscv32/litex_picorv32/board.h>
 #include <zephyr/types.h>
+
+//#define uart_liteuart_port_0_clk_freq   115200
 
 #define UART_EV_TX          (1 << 0)
 #define UART_EV_RX          (1 << 1)
@@ -339,7 +343,7 @@ static int uart_liteuart_init(struct device *dev);
 
 static const struct uart_liteuart_device_config uart_liteuart_dev_cfg_0 = {
     .port           = UART_BASE_ADDR,
-    .sys_clk_freq   = 100000000, // todo: fix
+    .sys_clk_freq   = uart_liteuart_port_0_clk_freq,
     .baud_rate      = CONFIG_LITEUART_UART_0_CURRENT_SPEED,
     .rxcnt_irq      = 0,
     .txcnt_irq      = 0,

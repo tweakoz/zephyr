@@ -13,6 +13,9 @@
 #include <toolchain.h>
 #include <linker/sections.h>
 #include <soc.h>
+#ifdef CONFIG_BOARD_LITEX_PICORV32
+#include <custom_ops.S>
+#endif
 
 /* exports */
 GTEXT(__soc_handle_irq)
@@ -23,11 +26,14 @@ GTEXT(__soc_handle_irq)
  */
 SECTION_FUNC(exception.other, __soc_handle_irq)
 	/* Clear exception number from CSR mip register */
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	li t1, 1
 	sll t0, t1, a0
 	csrrc t1, mip, t0
-
-	/* Return */
+	#else
+	xor t0, t0, t2
+	picorv32_setq_insn(q1, t0)
+	#endif
 	jalr x0, ra
 
 /*
@@ -43,7 +49,9 @@ WTEXT(__soc_is_irq)
  *
  */
 SECTION_FUNC(exception.other, __soc_is_irq)
+	
 	/* Read mcause and check if interrupt bit is set */
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	csrr t0, mcause
 	li t1, SOC_MCAUSE_IRQ_MASK
 	and t0, t0, t1
@@ -52,7 +60,14 @@ SECTION_FUNC(exception.other, __soc_is_irq)
 	addi a0, x0, 0
 	beqz t0, not_interrupt
 	addi a0, a0, 1
-
+	#else
+	li t1, 2
+	picorv32_getq_insn(t0, q1)
+	addi a0, x0, 0
+	beq t0, t1, not_interrupt
+	addi a0, a0, 1	
+	#endif
+			
 not_interrupt:
 	/* return */
 	jalr x0, ra

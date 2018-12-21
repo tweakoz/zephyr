@@ -13,7 +13,7 @@ from kconfiglib import Kconfig, BOOL, TRISTATE, TRI_TO_STR
 # are guaranteed to not change.
 WARNING_WHITELIST = (
     # Warning generated when a symbol with unsatisfied dependencies is being
-    # selected. These should be investigated, but whitelist them for now.
+    # selected. These should be investigated, but whitelist them for now.     
     "y-selected",
 )
 

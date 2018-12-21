@@ -126,6 +126,13 @@ config VEXRISCV_LITEX_IRQ
     help
       IRQ implementation for LiteX VexRiscv
 
+config PICORV32_LITEX_IRQ
+       bool "PicoRV32 LiteX Interrupt controller"
+       depends on SOC_RISCV32_LITEX_PICORV32
+       select SERIAL_SUPPORT_INTERRUPT
+       help
+         IRQ implementation for LiteX PicoRV32
+
 config DW_ICTL
 	bool "Designware Interrupt Controller"
 	depends on MULTI_LEVEL_INTERRUPTS

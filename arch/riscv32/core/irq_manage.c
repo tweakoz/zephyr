@@ -10,15 +10,16 @@
 
 void _irq_spurious(void *unused)
 {
-	u32_t mcause;
-
 	ARG_UNUSED(unused);
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
+	u32_t mcause;
 
 	__asm__ volatile("csrr %0, mcause" : "=r" (mcause));
 
 	mcause &= SOC_MCAUSE_EXP_MASK;
 
 	printk("Spurious interrupt detected! IRQ: %d\n", (int)mcause);
+	#endif
 #if defined(CONFIG_RISCV_HAS_PLIC)
 	if (mcause == RISCV_MACHINE_EXT_IRQ) {
 		printk("PLIC interrupt line causing the IRQ: %d\n",

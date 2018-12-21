@@ -5,7 +5,7 @@
 
 menuconfig UART_LITEUART
 	bool "LiteUART serial driver"
-	depends on SOC_RISCV32_LITEX_VEXRISCV
+	depends on SOC_RISCV32_LITEX_VEXRISCV || SOC_RISCV32_LITEX_PICORV32
 	select SERIAL_HAS_DRIVER
 	help
 	  This option enables LiteUART serial driver.

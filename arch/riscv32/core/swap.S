@@ -7,6 +7,9 @@
 #include <irq.h>
 #include <kernel_structs.h>
 #include <offsets_short.h>
+#ifdef CONFIG_BOARD_LITEX_PICORV32
+#include <custom_ops.S>
+#endif
 
 /* exports */
 GTEXT(__swap)
@@ -93,7 +96,9 @@ SECTION_FUNC(exception.other, __swap)
 	 * Use atomic instruction csrrs to do so.
 	 */
 	andi a0, a0, SOC_MSTATUS_IEN
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	csrrs t0, mstatus, a0
+	#endif
 
 	/* Set value of return register a0 to value of register t2 */
 	addi a0, t2, 0

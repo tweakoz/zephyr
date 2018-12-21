@@ -140,7 +140,7 @@ config RV32M1_LPTMR_TIMER
 config LITEX_TIMER
     bool "LiteX Timer"
     default y
-    depends on SOC_RISCV32_LITEX_VEXRISCV
+    depends on SOC_RISCV32_LITEX_VEXRISCV || SOC_RISCV32_LITEX_PICORV32
     help
       This module implements a kernel device driver for LiteX.
 

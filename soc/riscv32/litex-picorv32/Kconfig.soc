@@ -1,0 +1,8 @@
+config SOC_RISCV32_LITEX_PICORV32
+	bool "LiteX PicoRV32 system implementation"
+	select ATOMIC_OPERATIONS_C
+
+config UART_CONSOLE_ON_DEV_NAME
+	string
+	default "uart0"
+	depends on SOC_RISCV32_LITEX_PICORV32

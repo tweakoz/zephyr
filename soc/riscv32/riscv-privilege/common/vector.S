@@ -6,6 +6,9 @@
  */
 
 #include <toolchain.h>
+#ifdef CONFIG_BOARD_LITEX_PICORV32
+#include <custom_ops.S>
+#endif
 
 /* exports */
 GTEXT(__start)
@@ -16,13 +19,15 @@ GTEXT(__irq_wrapper)
 
 SECTION_FUNC(vectors, __start)
 	.option norvc;
-
 	/*
 	 * Set mtvec (Machine Trap-Vector Base-Address Register)
 	 * to __irq_wrapper.
 	 */
 	la t0, __irq_wrapper
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	csrw mtvec, t0
-
+	#else
+	picorv32_setq_insn(q2, t0)
+	#endif /*CONFIG_BOARD_LITEX_PICORV32*/
 	/* Jump to __initialize */
 	tail __initialize

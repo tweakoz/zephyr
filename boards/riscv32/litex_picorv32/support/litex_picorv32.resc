@@ -1,0 +1,20 @@
+:name: LiteX + PicoRV32
+:description: This script is prepared to run Zephyr on a LiteX SoC with PicoRV32.
+
+$name?="litex"
+
+using sysbus
+mach create $name
+machine LoadPlatformDescription @platforms/cpus/litex_picorv32.repl
+
+$bios?=@http://antmicro.com/projects/renode/litex_picorv32--bios-highly_customized.bin-s_23676-c2ea2ebc719a7ba3979bcad5a4508de06372ae8d
+
+showAnalyzer uart
+
+macro reset
+"""
+    sysbus LoadBinary $bios 0x0
+
+    sysbus LoadELF $bin
+"""
+runMacro $reset

@@ -9,6 +9,9 @@
 #include <linker/sections.h>
 #include <kernel_structs.h>
 #include <offsets_short.h>
+#ifdef CONFIG_BOARD_LITEX_PICORV32
+#include <custom_ops.S>
+#endif
 
 /* imports */
 GDATA(_sw_isr_table)
@@ -67,6 +70,15 @@ GTEXT(__irq_wrapper)
 SECTION_FUNC(exception.entry, __irq_wrapper)
 	/* Allocate space on thread stack to save registers */
 	addi sp, sp, -__NANO_ESF_SIZEOF
+#ifdef CONFIG_BOARD_LITEX_PICORV32
+	// WARN! this is very litex-bios specific as we assume q2 contains a value of `ra`
+	// and a the end should contain address of `__irq_wrapper`!
+	picorv32_getq_insn(ra, q2)
+	sw t0, -4(sp)
+	la t0, __irq_wrapper
+	picorv32_setq_insn(q2, t0)
+	lw t0, -4(sp)
+#endif
 
 	/*
 	 * Save caller-saved registers on current thread stack.
@@ -94,12 +106,21 @@ SECTION_FUNC(exception.entry, __irq_wrapper)
 	sw a7, __NANO_ESF_a7_OFFSET(sp)
 
 	/* Save MEPC register */
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	csrr t0, mepc
 	sw t0, __NANO_ESF_mepc_OFFSET(sp)
 
 	/* Save SOC-specific MSTATUS register */
 	csrr t0, SOC_MSTATUS_REG
 	sw t0, __NANO_ESF_mstatus_OFFSET(sp)
+	
+	#else
+	picorv32_getq_insn(t0, q0)
+	sw t0, __NANO_ESF_mepc_OFFSET(sp)
+	
+	picorv32_getq_insn(t0, q1)
+	sw t0, __NANO_ESF_mstatus_OFFSET(sp)
+	#endif
 
 #ifdef CONFIG_RISCV_SOC_CONTEXT_SAVE
 	/* Handle context saving at SOC level. */
@@ -132,6 +153,8 @@ SECTION_FUNC(exception.entry, __irq_wrapper)
 	 * perform a context-switch or an IRQ offload. Otherwise call _Fault
 	 * to report the exception.
 	 */
+
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	csrr t0, mcause
 	li t2, SOC_MCAUSE_EXP_MASK
 	and t0, t0, t2
@@ -154,7 +177,28 @@ SECTION_FUNC(exception.entry, __irq_wrapper)
 	la ra, no_reschedule
 	tail _Fault
 
+	#else
+	li t1, 2
+	picorv32_getq_insn(t0, q1)
+	/*
+	* If exception comes from ecall then handle system call, otherwise fault
+	* 
+	*/
+	beq t0, t1, is_syscall
+
+	addi a0, sp, 0
+	la ra, no_reschedule
+	tail _Fault
+	#endif
 is_syscall:
+
+	#ifdef CONFIG_BOARD_LITEX_PICORV32
+	/*Clear ecall/ebreak or illegal instruction corresponding bit in q1*/
+	picorv32_getq_insn(t0, q1)
+	xori t0, t0, 2	
+	picorv32_setq_insn(q1, t0)
+	#endif	
+
 	/*
 	 * A syscall is the result of an ecall instruction, in which case the
 	 * MEPC will contain the address of the ecall instruction.
@@ -229,12 +273,44 @@ call_irq:
 #ifdef CONFIG_TRACING
 	call z_sys_trace_isr_enter
 #endif
-
+	
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	/* Get IRQ causing interrupt */
 	csrr a0, mcause
 	li t0, SOC_MCAUSE_EXP_MASK
 	and a0, a0, t0
+	
+	#else	
+	picorv32_getq_insn(t0, q1)
+	//In case we are here without a registered interrupt cause, assign unregistered index to _sw_irq_table
+	//Might need correction later
+	li a0, 10 
+	/*Timer*/
+case_timer:
+	li t2, 0x10
+	and t1, t0, t2
+	bne t1, t2, case_UART
+	li a0, 4	
+	j decoding_done
 
+	/*UART*/
+case_UART:
+	li t2, 0x20
+	and t1, t0, t2
+	bne t1, t2, case_ethernet
+	li a0, 5
+	j decoding_done 
+
+	/*Ethernet*/
+case_ethernet:
+	li t2, 0x40
+	and t1, t0, t2
+	bne t1, t2, decoding_done
+	li a0, 6
+	j decoding_done	
+
+decoding_done:
+	#endif
 	/*
 	 * Clear pending IRQ generating the interrupt at SOC level
 	 * Pass IRQ number to __soc_handle_irq via register a0
@@ -417,7 +493,7 @@ no_reschedule:
 	addi a0, sp, __NANO_ESF_soc_context_OFFSET
 	jal ra, __soc_restore_context
 #endif /* CONFIG_RISCV_SOC_CONTEXT_SAVE */
-
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	/* Restore MEPC register */
 	lw t0, __NANO_ESF_mepc_OFFSET(sp)
 	csrw mepc, t0
@@ -425,7 +501,15 @@ no_reschedule:
 	/* Restore SOC-specific MSTATUS register */
 	lw t0, __NANO_ESF_mstatus_OFFSET(sp)
 	csrw SOC_MSTATUS_REG, t0
+	
+	#else
+	lw t0, __NANO_ESF_mepc_OFFSET(sp)
+	picorv32_setq_insn(q0, t0)
 
+	lw t0, __NANO_ESF_mstatus_OFFSET(sp)
+	picorv32_setq_insn(q1, t0)
+
+	#endif
 	/* Restore caller-saved registers from thread stack */
 	lw ra, __NANO_ESF_ra_OFFSET(sp)
 	lw gp, __NANO_ESF_gp_OFFSET(sp)
@@ -448,6 +532,10 @@ no_reschedule:
 
 	/* Release stack space */
 	addi sp, sp, __NANO_ESF_SIZEOF
-
+	#ifndef CONFIG_BOARD_LITEX_PICORV32
 	/* Call SOC_ERET to exit ISR */
 	SOC_ERET
+	#else	
+	picorv32_retirq_insn() // return from interrupt
+	#endif
+
