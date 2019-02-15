@@ -36,7 +36,7 @@
 		uart0: serial@e0001800 {
 			compatible = "litex,uart0";
 			interrupt-parent = <&intc0>;
-			interrupts = <2>;
+			interrupts = <5>;
 			reg = <0xe0001800 0x18>;
 			reg-names = "control";
 			label = "uart0";
@@ -45,7 +45,7 @@
         	timer0: serial@e0002800 {
             		compatible = "litex,timer0";
             		interrupt-parent = <&intc0>;
-            		interrupts = <1>;
+            		interrupts = <4>;
             		reg = <0xe0002800 0x40>;
             		reg-names = "control";
             		label = "timer0";
