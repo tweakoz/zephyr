@@ -1,0 +1,10 @@
+sample:
+  description: HTTP port
+  name: http_port
+tests:
+  test:
+    filter: TOOLCHAIN_HAS_NEWLIB == 1
+    harness: net
+    min_ram: 32
+    min_flash: 128
+    tags: net socket
