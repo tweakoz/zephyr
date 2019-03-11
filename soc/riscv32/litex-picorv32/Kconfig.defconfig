@@ -34,15 +34,15 @@ config RISCV_ROM_BASE_ADDR
 
 config RISCV_ROM_SIZE
 	hex
-	default 0x8000
+	default 0x10000
 
 config RISCV_RAM_BASE_ADDR
 	hex
-	default	0x40008000
+	default	0x40010000
 
 config RISCV_RAM_SIZE
 	hex
-	default 0xFFF8000
+	default 0x0FFF0000
 
 config SERIAL_SUPPORT_INTERRUPT
 	bool

@@ -5,6 +5,10 @@
 / {
 	model = "LiteX PicoRV32";
 	compatible = "litex,picorv32";
+
+	chosen {
+		zephyr,shell-uart = &uart0;
+	};
 };
 
 &uart0 {
