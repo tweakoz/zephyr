@@ -1,0 +1,63 @@
+menuconfig ETH_LITEETH
+    bool "LiteEth Ethernet core driver"
+	depends on NET_L2_ETHERNET
+
+if ETH_LITEETH
+
+config ETH_LITEETH_0
+    bool "LiteEth Ethernet port 0"
+    help
+        Include port 0 driver
+
+config ETH_LITEETH_0_IRQ_PRI
+    int "LiteEth interrupt priority"
+    depends on ETH_LITEETH_0
+    default 0
+    help
+        IRQ priority
+
+choice ETH_LITEETH_0_MAC_SELECT
+    prompt "MAC address"
+    help
+        Choose how to configure MAC address
+
+config ETH_LITEETH_0_MAC_MANUAL
+    bool "Manual MAC address"
+
+endchoice # ETH_LITEETH_0_MAC_SELECT
+
+if ETH_LITEETH_0_MAC_MANUAL
+
+config ETH_LITEETH_0_MAC_1
+    hex "MAC address byte 1"
+    default 0x10
+    range 0x00 0xff
+
+config ETH_LITEETH_0_MAC_2
+    hex "MAC address byte 2"
+    default 0xe2
+    range 0x00 0xff
+
+config ETH_LITEETH_0_MAC_3
+    hex "MAC address byte 3"
+    default 0xd5
+    range 0x00 0xff
+
+config ETH_LITEETH_0_MAC_4
+    hex "MAC address byte 4"
+    default 0x00
+    range 0x00 0xff
+
+config ETH_LITEETH_0_MAC_5
+    hex "MAC address byte 5"
+    default 0x00
+    range 0x00 0xff
+
+config ETH_LITEETH_0_MAC_6
+    hex "MAC address byte 6"
+    default 0x00
+    range 0x00 0xff
+
+endif # ETH_LITEETH_0_MAC_MANUAL
+
+endif # ETH_LITEETH

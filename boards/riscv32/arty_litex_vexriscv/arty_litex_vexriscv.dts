@@ -9,6 +9,7 @@
 		zephyr,console = &uart0;
         zephyr,shell-uart = &uart0;
         zephyr,timer = &timer0;
+        zephyr,eth = &eth0;
 	};
 };
 
@@ -18,5 +19,9 @@
 };
 
 &timer0 {
+    status = "ok";
+};
+
+&eth0 {
     status = "ok";
 };

@@ -20,6 +20,7 @@
 
 #define TIMER_INTERRUPT 1
 #define UART_INTERRUPT 2
+#define ETHMAC_INTERRUPT 3
 
 static inline void vexriscv_litex_irq_setmask(u32_t mask)
 {
@@ -62,6 +63,13 @@ static void vexriscv_litex_irq_handler(void *device) {
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
     if (irqs & (1 << UART_INTERRUPT)) {
         ite = (struct _isr_table_entry*)&_sw_isr_table[UART_INTERRUPT];
+        ite->isr(ite->arg);
+    }
+#endif
+
+#ifdef CONFIG_ETH_LITEETH
+    if (irqs & (1 << ETHMAC_INTERRUPT)) {
+        ite = (struct _isr_table_entry*)&_sw_isr_table[ETHMAC_INTERRUPT];
         ite->isr(ite->arg);
     }
 #endif
