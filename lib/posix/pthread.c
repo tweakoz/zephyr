@@ -135,16 +135,8 @@ int pthread_create(pthread_t *newthread, const pthread_attr_t *attr,
 	u32_t pthread_num;
 	pthread_condattr_t cond_attr;
 	struct posix_thread *thread;
-
-	/*
-	 * FIXME: Pthread attribute must be non-null and it provides stack
-	 * pointer and stack size. So even though POSIX 1003.1 spec accepts
-	 * attrib as NULL but zephyr needs it initialized with valid stack.
-	 */
-	if ((attr == NULL) || (attr->initialized == 0U)
-	    || (attr->stack == NULL) || (attr->stacksize == 0)) {
-		return EINVAL;
-	}
+	void *newstack;
+	size_t newstacksize = CONFIG_DEFAULT_PTHREAD_STACK_SIZE;
 
 	pthread_mutex_lock(&pthread_pool_lock);
 	for (pthread_num = 0;
@@ -159,6 +151,20 @@ int pthread_create(pthread_t *newthread, const pthread_attr_t *attr,
 
 	if (pthread_num >= CONFIG_MAX_PTHREAD_COUNT) {
 		return EAGAIN;
+	}
+	if ((attr == NULL) || (attr->initialized == 0U)
+	    || (attr->stack == NULL) || (attr->stacksize == 0)) {
+		newstack = calloc(1, newstacksize);
+		if (newstack == NULL) {
+			return EAGAIN;
+		}
+
+		thread->auto_allocated_stack = newstack;
+	} else {
+		newstack = attr->stack;
+		newstacksize = attr->stacksize;
+
+		thread->auto_allocated_stack = NULL;
 	}
 
 	prio = posix_to_zephyr_priority(attr->priority, attr->schedpolicy);
@@ -179,8 +185,8 @@ int pthread_create(pthread_t *newthread, const pthread_attr_t *attr,
 	pthread_cond_init(&thread->state_cond, &cond_attr);
 	sys_slist_init(&thread->key_list);
 
-	*newthread = (pthread_t) k_thread_create(&thread->thread, attr->stack,
-						 attr->stacksize,
+	*newthread = (pthread_t) k_thread_create(&thread->thread, newstack,
+						 newstacksize,
 						 (k_thread_entry_t)
 						 zephyr_thread_wrapper,
 						 (void *)arg, NULL,
@@ -247,6 +253,10 @@ int pthread_cancel(pthread_t pthread)
 			pthread_cond_broadcast(&thread->state_cond);
 		}
 		pthread_mutex_unlock(&thread->state_lock);
+
+		if (thread->auto_allocated_stack != NULL) {
+			free(thread->auto_allocated_stack);
+		}
 
 		k_thread_abort((k_tid_t) thread);
 	}
@@ -382,6 +392,11 @@ void pthread_exit(void *retval)
 	}
 
 	pthread_mutex_unlock(&self->state_lock);
+
+	if (self->auto_allocated_stack != NULL) {
+		free(self->auto_allocated_stack);
+	}
+
 	k_thread_abort((k_tid_t)self);
 }
 
