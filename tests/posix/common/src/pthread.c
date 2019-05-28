@@ -281,11 +281,6 @@ void test_posix_pthread_execution(void)
 	ret = pthread_attr_destroy(&attr[0]);
 	zassert_equal(ret, EINVAL, "uninitialized attr destroyed!");
 
-	/* TESTPOINT: Try creating thread before attr init */
-	ret = pthread_create(&newthread[0], &attr[0],
-				thread_top_exec, NULL);
-	zassert_equal(ret, EINVAL, "thread created before attr init!");
-
 	for (i = 0; i < N_THR_E; i++) {
 		ret = pthread_attr_init(&attr[i]);
 		if (ret != 0) {
