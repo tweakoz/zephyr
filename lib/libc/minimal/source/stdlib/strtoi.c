@@ -36,17 +36,17 @@
 #include <stdlib.h>
 
 /*
- * Convert a string to a long integer.
+ * Convert a string to a long long integer, bounded by limit.
  *
  * Ignores `locale' stuff.  Assumes that the upper and lower case
  * alphabets and digits are each contiguous.
  */
-long strtol(const char *nptr, char **endptr, register int base)
+static unsigned long long strtox(const char *nptr, char **endptr, register int base, int issigned, unsigned long long limit)
 {
 	register const char *s = nptr;
-	register unsigned long acc;
+	register unsigned long long acc;
 	register int c;
-	register unsigned long cutoff;
+	register unsigned long long cutoff;
 	register int neg = 0, any, cutlim;
 
 	/*
@@ -89,8 +89,8 @@ long strtol(const char *nptr, char **endptr, register int base)
 	 * Set any if any `digits' consumed; make it negative to indicate
 	 * overflow.
 	 */
-	cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
-	cutlim = cutoff % (unsigned long)base;
+	cutoff = neg && issigned ? (unsigned long long)(limit + 1) : limit;
+	cutlim = cutoff % (unsigned long long)base;
 	cutoff /= (unsigned long)base;
 	for (acc = 0, any = 0;; c = *s++) {
 		if (isdigit(c)) {
@@ -112,12 +112,26 @@ long strtol(const char *nptr, char **endptr, register int base)
 		}
 	}
 	if (any < 0) {
-		acc = neg ? LONG_MIN : LONG_MAX;
+		acc = neg && issigned ? -limit - 1LL : limit;
 		errno = ERANGE;
-	} else if (neg)
+	} else if (neg) {
 		acc = -acc;
+	}
 	if (endptr != NULL) {
 		*endptr = (char *)(any ? s - 1 : nptr);
 	}
 	return acc;
+}
+
+
+/* Convert a string to an unsigned long integer. */
+unsigned long strtoul(const char *nptr, char **endptr, register int base)
+{
+	return (unsigned long)strtox(nptr, endptr, base, 0, ULONG_MAX);
+}
+
+/* Convert a string to a long integer. */
+long strtol(const char *nptr, char **endptr, register int base)
+{
+	return (long)strtox(nptr, endptr, base, 1, LONG_MAX);
 }
