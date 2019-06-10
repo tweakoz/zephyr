@@ -43,6 +43,10 @@ struct uart_liteuart_data {
 #endif
 };
 
+#define DEV_DATA(dev)						\
+	((struct uart_liteuart_data * const)(dev)->driver_data)
+
+
 /**
  * @brief Output a character in polled mode.
  *
